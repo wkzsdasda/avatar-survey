@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>アンケート（バーチャルアバター会話実験）</title>
+  <style>
+    :root{--bg:#0b0f17;--card:#121a27;--text:#e9eef7;--muted:#a8b3c7;--line:#233049;--accent:#5aa7ff;--danger:#ff5a7a;}
+    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif;background:linear-gradient(180deg,#070a10 0%,#0b0f17 60%,#070a10 100%);color:var(--text);}
+    .wrap{max-width:920px;margin:0 auto;padding:24px;}
+    header{padding:10px 0 18px;}
+    h1{font-size:20px;margin:0 0 6px;}
+    p{margin:0;color:var(--muted);line-height:1.6;}
+    .card{background:rgba(18,26,39,.92);border:1px solid var(--line);border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 12px 26px rgba(0,0,0,.35);}
+    .qtitle{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;}
+    .qid{min-width:44px;height:26px;border-radius:999px;background:rgba(90,167,255,.16);border:1px solid rgba(90,167,255,.35);
+         display:flex;align-items:center;justify-content:center;color:var(--accent);font-weight:700;font-size:12px;}
+    .qtext{font-size:15px;line-height:1.5;}
+    .req{color:var(--danger);font-weight:700;margin-left:8px;font-size:12px;}
+    .field{margin-top:10px;}
+    input, select, textarea{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0c1320;color:var(--text);}
+    textarea{min-height:110px;}
+    .likert{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:10px;}
+    .likert label{display:flex;flex-direction:column;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px;background:#0c1320;}
+    .actions{display:flex;gap:10px;margin-top:10px;}
+    button{padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#0c1320;color:#fff;}
+    .primary{background:rgba(90,167,255,.18);}
+    .error{color:#ff5a7a;display:none;}
+    .ok{color:#7dffa8;display:none;}
+    pre{background:#0a101b;padding:12px;border-radius:12px;}
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <h1>バーチャルアバター会話実験　アンケート</h1>
+  <p>※問11以外は必須です。</p>
+</header>
+
+<form id="surveyForm">
+
+<section class="card">
+  <div class="qtitle"><div class="qid">0-1</div><div class="qtext">氏名<span class="req">必須</span></div></div>
+  <input type="text" name="user_name" required placeholder="例：山田 太郎">
+</section>
+
+<section class="card">
+  <div class="qtitle"><div class="qid">0-2</div><div class="qtext">学籍番号<span class="req">必須</span></div></div>
+  <input type="text" name="student_id" required placeholder="例：XXXXX">
+</section>
+
+<section class="card">
+  <div class="qtitle"><div class="qid">1</div><div class="qtext">所属学科<span class="req">必須</span></div></div>
+  <select name="q1_department" required>
+    <option value="" disabled selected>選択してください</option>
+    <option>機械系</option>
+    <option>電気・電子系</option>
+    <option>情報・計算機系</option>
+    <option>その他</option>
+  </select>
+</section>
+
+<section class="card">
+  <div class="qtitle"><div class="qid">2</div><div class="qtext">学年<span class="req">必須</span></div></div>
+  <select name="q2_grade" required>
+    <option value="" disabled selected>選択してください</option>
+    <option>1年</option><option>2年</option><option>3年</option><option>4年</option>
+  </select>
+</section>
+
+<section class="card">
+  <div class="qtitle"><div class="qid">3〜10</div><div class="qtext">1〜5で評価してください</div></div>
+  <div id="likert"></div>
+</section>
+
+<section class="card">
+  <div class="qtitle"><div class="qid">11</div><div class="qtext">自由記述（任意）</div></div>
+  <textarea name="q11_free"></textarea>
+</section>
+
+<section class="card">
+  <div class="actions">
+    <button class="primary" type="submit">送信</button>
+    <button type="reset">リセット</button>
+  </div>
+  <div class="error" id="err">未入力項目があります</div>
+  <div class="ok" id="ok">送信完了</div>
+  <pre id="out"></pre>
+</section>
+
+</form>
+</div>
+
+<script>
+const GAS_URL = "【ここにあなたの Web App URL】";
+
+const qs=[
+["q3","会話はスムーズだった"],
+["q4","応答は自然だった"],
+["q5","理解していると感じた"],
+["q6","外見は体験を向上させた"],
+["q7","楽しかった"],
+["q8","没入感があった"],
+["q9","ストレスを感じた"],
+["q10","人間との差を感じた"]
+];
+
+const lik=document.getElementById("likert");
+qs.forEach(q=>{
+  lik.innerHTML+=`<p>${q[1]}</p><div class="likert">
+    ${[1,2,3,4,5].map(v=>`<label><input type="radio" name="${q[0]}" value="${v}" required>${v}</label>`).join("")}
+  </div>`;
+});
+
+document.getElementById("surveyForm").onsubmit=async e=>{
+  e.preventDefault();
+  const fd=new FormData(e.target);
+  const data={meta:{created_at:new Date().toISOString()},answers:Object.fromEntries(fd)};
+  document.getElementById("out").textContent=JSON.stringify(data,null,2);
+  await fetch(GAS_URL,{method:"POST",body:JSON.stringify(data)});
+  document.getElementById("ok").style.display="block";
+};
+</script>
+
+</body>
+</html>
