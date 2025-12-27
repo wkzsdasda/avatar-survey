@@ -119,11 +119,32 @@ document.getElementById("surveyForm").onsubmit=async e=>{
   const fd=new FormData(e.target);
   const data={meta:{created_at:new Date().toISOString()},answers:Object.fromEntries(fd)};
   document.getElementById("out").textContent=JSON.stringify(data,null,2);
-  await fetch(GAS_URL,{method:"POST",body:JSON.stringify(data)});
-  document.getElementById("ok").style.display="block";
+  const res = await fetch(GAS_URL, {
+  method: "POST",
+  body: JSON.stringify(data)
+});
+
+const text = await res.text();
+document.getElementById("out").textContent =
+  JSON.stringify(data, null, 2) + "\n\n--- server response ---\n" + text;
+
+if (!res.ok) {
+  throw new Error("HTTP " + res.status + " " + res.statusText);
+}
+
+let obj = null;
+try { obj = JSON.parse(text); } catch (e) {}
+
+if (!obj || obj.ok !== true) {
+  throw new Error("Server returned not-ok: " + text);
+}
+
+document.getElementById("ok").style.display = "block";
+
 };
 </script>
 
 </body>
 </html>
+
 
